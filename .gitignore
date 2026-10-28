@@ -1,0 +1,17 @@
+# Compilação e ferramentas
+_scratch/
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+*.binlog
+
+# Artefatos de compilação nativa
+*.obj
+*.o
+*.dll
+*.exe
+*.pdb
+*.ilk

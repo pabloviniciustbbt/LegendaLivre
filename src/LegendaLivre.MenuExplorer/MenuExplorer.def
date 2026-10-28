@@ -1,0 +1,4 @@
+LIBRARY MenuExplorer
+EXPORTS
+    DllGetClassObject
+    DllCanUnloadNow

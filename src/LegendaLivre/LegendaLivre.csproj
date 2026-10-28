@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>LegendaLivre</RootNamespace>
+    <AssemblyName>LegendaLivre</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\LegendaLivre.ico</ApplicationIcon>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>none</DebugType>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LegendaLivre.Testes" />
+    <EmbeddedResource Include="Assets\LegendaLivre.ico" LogicalName="LegendaLivre.Assets.LegendaLivre.ico" />
+    <EmbeddedResource Include="..\..\_scratch\menu-nativo-build\LegendaLivre.MenuExplorer.x64.dll" LogicalName="LegendaLivre.MenuExplorer.x64.dll" />
+    <EmbeddedResource Include="..\..\_scratch\menu-nativo-build\LegendaLivre.MenuExplorer.x86.dll" LogicalName="LegendaLivre.MenuExplorer.x86.dll" />
+    <EmbeddedResource Include="..\..\_scratch\menu-nativo-build\LegendaLivre.MenuExplorer.arm64.dll" LogicalName="LegendaLivre.MenuExplorer.arm64.dll" />
+  </ItemGroup>
+  <Target Name="CompilarMenuExplorer" BeforeTargets="PrepareForBuild">
+    <!-- Chamado a partir do pwsh 7 (como no CI), o PSModulePath herdado faz o Windows PowerShell perder Get-FileHash e Expand-Archive. -->
+    <Exec Command="set &quot;PSModulePath=&quot; &amp; powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\compilar-menu.ps1&quot;" />
+  </Target>
+</Project>

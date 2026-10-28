@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>10</LangVersion>
+    <Nullable>disable</Nullable>
+    <Version>1.0.0</Version>
+    <Company>LegendaLivre</Company>
+    <Product>LegendaLivre</Product>
+    <Copyright>Pablo Leal e contribuidores do LegendaLivre</Copyright>
+  </PropertyGroup>
+</Project>

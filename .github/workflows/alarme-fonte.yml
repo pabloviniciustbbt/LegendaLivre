@@ -1,0 +1,55 @@
+name: Alarme da fonte de legendas
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  checar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar a fonte
+        id: consulta
+        shell: bash
+        run: |
+          set -o pipefail
+          falhas=""
+          erros_rede=""
+          for codigo in 6 36 14; do
+            rc=0
+            corpo=$(curl -sS -f -m 30 --retry 2 --retry-delay 5 --data-urlencode 'version=383' --data-urlencode 'response=xml' --data-urlencode "cod_language=${codigo}" --data-urlencode 'hash=MDAwMDAwMDAwMDAwMDAwMA==' 'https://www.getsubtitle.com/webService/downloadManager/get_subtitles_by_hash.php') || rc=$?
+            if [ "$rc" != "0" ]; then
+              case "$rc" in
+                6|7|28|35)
+                  erros_rede="$erros_rede $codigo"
+                  echo "::warning::Falha de rede ao consultar a fonte (idioma $codigo); sem issue."
+                  ;;
+                *)
+                  falhas="$falhas idioma $codigo: curl saiu com código $rc"
+                  ;;
+              esac
+              continue
+            fi
+            if ! printf '%s' "$corpo" | python -c 'import sys, base64, datetime, xml.etree.ElementTree as ET; texto=sys.stdin.read(); assert "<!DOCTYPE" not in texto; raiz=ET.fromstring(texto); assert raiz.tag == "subtitles"; itens=raiz.findall("subtitle"); assert itens; primeiro=itens[0]; campos={k:base64.b64decode(primeiro.findtext(k, ""), validate=True).decode("utf-8") for k in ("id", "name", "date")}; assert campos["id"].isascii() and campos["id"].isdigit() and campos["name"].strip(); datetime.datetime.strptime(campos["date"], "%d-%m-%Y")'; then
+              falhas="$falhas idioma $codigo: XML/Base64 inválido"
+            fi
+          done
+          echo "falhas=$falhas" >> "$GITHUB_OUTPUT"
+          echo "erros_rede=$erros_rede" >> "$GITHUB_OUTPUT"
+      - name: Abrir issue se mudou
+        if: steps.consulta.outputs.falhas != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FALHAS: ${{ steps.consulta.outputs.falhas }}
+        shell: bash
+        run: |
+          titulo="Fonte de legendas mudou"
+          aberta=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "$titulo in:title" --json number --jq 'length')
+          if [ "$aberta" = "0" ]; then
+            corpo=$(printf 'A checagem semanal não reconheceu a resposta da fonte.\n\nDetalhes:%s' "$FALHAS")
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$titulo" --body "$corpo"
+          fi

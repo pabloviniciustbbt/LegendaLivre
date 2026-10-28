@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes
+        run: dotnet test tests/LegendaLivre.Testes -c Release
+      - name: Build
+        run: dotnet build src/LegendaLivre -c Release
+      - name: Conferir tamanho
+        shell: pwsh
+        run: |
+          $exe = Get-Item src/LegendaLivre/bin/Release/net48/LegendaLivre.exe
+          if ($exe.Length -gt 300KB) { throw "LegendaLivre.exe tem $($exe.Length) bytes; limite 300 KB" }
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build
+        run: dotnet build src/LegendaLivre -c Release
+      - name: Preparar release
+        shell: pwsh
+        run: |
+          Copy-Item src/LegendaLivre/bin/Release/net48/LegendaLivre.exe .
+          $hash = (Get-FileHash LegendaLivre.exe -Algorithm SHA256).Hash.ToLower()
+          [IO.File]::WriteAllText("LegendaLivre.exe.sha256", "$hash  LegendaLivre.exe`n")
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            LegendaLivre.exe
+            LegendaLivre.exe.sha256
